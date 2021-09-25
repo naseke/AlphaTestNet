@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Perso
+cache
+cache2
+cmds2
+cmds3

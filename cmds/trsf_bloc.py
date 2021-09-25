@@ -18,7 +18,6 @@ class trsf_bloc:
         else:
             msg.update({'bloc': {}})
             msg.update({'from': ori})
-        print(msg)
         return msg
 
     def get_STRUCT(self):

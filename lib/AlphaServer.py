@@ -334,16 +334,16 @@ class AlphaServerNode(AlphaServer):
             if ori == 'fabrik':
                 await self.send_msg_ctrl('done')
                 if 'validator' in self.services.keys():
-                    AlphaClientNode.send_cmd(self.services['validator'][0], self.services['validator'][1], self.boucle, 'trsf_bloc', 'AlphaClientNode', debug=False, chaine=(list(self.services[0].keys())[0], blc))
+                    AlphaClientNode.send_cmd(self.services['validator'][0], self.services['validator'][1], self.boucle, 'trsf_bloc', 'AlphaClientNode', debug=False, chaine=(list(self.services.keys())[0], blc))
                 else:
                     self.blocs_f.append(blc)
                     couleurs.AffichageColor().msg_WARNING(f"ATTENTION ! node non connecté à un service validator ou ne connaissant pas un node avec le service. \n"
                                                           f"Stockage du bloc. Nombre de Blocs stockées : {len(self.blocs_f)}")
             elif ori == 'validator':
                 if 'cache' in self.services.keys():
-                    AlphaClientNode.send_cmd(self.services['cache'][0], self.services['cache'][1], self.boucle, 'trsf_bloc', 'AlphaClientNode', debug=False, chaine=(list(self.services[0].keys())[0], blc))
+                    AlphaClientNode.send_cmd(self.services['cache'][0], self.services['cache'][1], self.boucle, 'trsf_bloc', 'AlphaClientNode', debug=False, chaine=(list(self.services.keys())[0], blc))
                 else:
-                    self.blocs_v.append(blc) # une seule queue ou 2 ?
+                    self.blocs_v.append(blc)
                     couleurs.AffichageColor().msg_WARNING(f"ATTENTION ! node non connecté à un service cache ou ne connaissant pas un node avec le service. \n"
                                                           f"Stockage du bloc. Nombre de Blocs stockées : {len(self.blocs_v)}")
             elif ori == 'cache':
@@ -425,7 +425,7 @@ class AlphaServerNode(AlphaServer):
                 await self.trt_config('validator'.upper())
             else:
                 if not self.ordo.execute('trt_config_VALIDATOR'):
-                    self.ordo.add_task('trt_config_VALIDATOR', True, 'validator'.upper(), self, seconds=5)
+                    self.ordo.add_task('trt_config_VALIDATOR', True, self, 'validator'.upper(), seconds=5)
 
     async def trt_config(self, service):
         from lib.AlphaClient import AlphaClientNode
@@ -490,6 +490,7 @@ class AlphaServerCache(AlphaServer):
 
     async def trt_cmd(self, **msg):
         from lib.AlphaClient import AlphaClientCache
+        from lib.block import Block
         if msg['command'] == 'get_services':
             await self.send_msg_common_rep('get_services')
             self.node = msg['node']
@@ -497,12 +498,17 @@ class AlphaServerCache(AlphaServer):
         elif msg['command'] == 'get_blk_id_prev':
             await self.send_msg_ctrl('done')
             AlphaClientCache.send_cmd(self.node[0], self.node[1], self.boucle, 'get_blk_id_prev', 'AlphaClientCache', debug=False, chaine=self.blk_id_prev)
+        elif msg['command'] == 'trsf_bloc':
+            ori, blc = await self.pre_cmds.get_func_throught_module('pre_read_cmd')(self, **msg)
+            await self.cache_blk(Block(blc, "0.1.0"))
         else:
             await super().trt_cmd(**msg)
 
     async def cache_blk(self, blk):
         from lib.stock_hdd import hdd
         hdd().write_block(blk)
+        self.index = self.init_index()
+        self.blk_id_prev = max(self.index['id_obj_prev'], key=itemgetter(0))[0]
 
     def init_index(self):
         pass # A faire pour un cache normal
@@ -519,7 +525,6 @@ class AlphaServerCache(AlphaServer):
         except ConnectionRefusedError:
             return -1
         return 0
-
 
 class AlphaServerSuperCache(AlphaServerCache):
 
@@ -668,7 +673,7 @@ class AlphaServerValidator(AlphaServer):
 
     def __init__(self, host, port, pwd=None, debug=False):
         super().__init__(host, port, pwd, debug)
-        self.services = [{'Validator': [self.listener.address[0], self.listener.address[1]]}, ] # TODO supprimer la notion de list
+        self.services = [{'validator': [self.listener.address[0], self.listener.address[1]]}, ] # TODO supprimer la notion de list
         self.currentblock = None
         self.node = None
         self.blocks = deque()
@@ -701,8 +706,10 @@ class AlphaServerValidator(AlphaServer):
 
     async def trt_cmd(self, **msg):
         from lib.block import Block
-
-        if msg['command'] == 'trsf_bloc':
+        if msg['command'] == 'get_services':
+            await self.send_msg_common_rep('get_services')
+            self.node = msg['node']
+        elif msg['command'] == 'trsf_bloc':
             ori, blc = await self.pre_cmds.get_func_throught_module('pre_read_cmd')(self, **msg)
             await self.send_msg_ctrl('done')
             self.currentblock = Block(blc,"0.1.0")
@@ -714,8 +721,8 @@ class AlphaServerValidator(AlphaServer):
     async def sign_block(self):
         import hashlib
         import datetime
-        self.currentblock['blk_signature'] = hashlib.sha512(f"{self.listener.address[0]}:{datetime.datetime.now().timestamp() * 1000000}").hexdigest()
-        self.currentblock['blk_signature_timestamp'] = int(datetime.datetime.now().timestamp() * 1000000)
+        self.currentblock.bloc['blk_signature'] = hashlib.sha512(f"{self.listener.address[0]}:{datetime.datetime.now().timestamp() * 1000000}".encode()).hexdigest()
+        self.currentblock.bloc['blk_signature_timestamp'] = int(datetime.datetime.now().timestamp() * 1000000)
 
     async def send_block(self):
         from lib.AlphaClient import AlphaClientValidator
