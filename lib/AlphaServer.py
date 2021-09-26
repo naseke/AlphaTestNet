@@ -331,6 +331,8 @@ class AlphaServerNode(AlphaServer):
 
         elif msg['command'] == 'trsf_bloc': # workflow fabik -> validator -> cache
             ori, blc = await self.pre_cmds.get_func_throught_module('pre_read_cmd')(self, **msg)
+            print("ori", ori)
+            print("blc", blc)
             if ori == 'fabrik':
                 await self.send_msg_ctrl('done')
                 if 'validator' in self.services.keys():
@@ -457,7 +459,7 @@ class AlphaServerCache(AlphaServer):
         self.ordo = OrdoCache()
         self.ordo_thread = None
         self.last_config_version, self.config = self.load_config()
-        self.blk_id_prev = max(self.index['id_obj_prev'], key=itemgetter(0))[0]
+        self.blk_id_prev = self.index['id_obj_prev'][len(self.index['id_obj_prev'])-1][0]
 
     def msg_welcome(self):
         couleurs.AffichageColor().msg_INFO(msg=f"""
@@ -481,7 +483,7 @@ class AlphaServerCache(AlphaServer):
         couleurs.AffichageColor().msg_INFO(f"Chargement de la configuration \n"
                                            f"version : {self.last_config_version}\n"
                                            f"{repr(self.config)}")
-        couleurs.AffichageColor().msg_INFO(f"{len(self.index)} blocs trouvés dans le cache")
+        couleurs.AffichageColor().msg_INFO(f"{len(self.index['id_obj_prev'])} blocs trouvés dans le cache")
         while self.is_start():
             print(f"boucle n°{self.boucle}")
             self.init_tx()
@@ -511,11 +513,11 @@ class AlphaServerCache(AlphaServer):
         self.blk_id_prev = max(self.index['id_obj_prev'], key=itemgetter(0))[0]
 
     def init_index(self):
-        pass # A faire pour un cache normal
+        pass # TODO A faire pour un cache normal
 
     def load_config(self):
-        # from lib.stock_hdd import hdd # future implementation
-        tupl = max(self.index['id_obj_prev'], key=itemgetter(0))
+        # from lib.stock_hdd import hdd # TODO future implementation (pas sure)
+        tupl = self.index['id_obj_prev'][0] # TODO A corrigé Il faut trouver une mecanique pour recuperer la dernière configuration
         return tupl[1].get_config_version(), tupl[1].blk_config
 
     async def _send_config(self, ip, port):
@@ -552,7 +554,7 @@ class AlphaServerSuperCache(AlphaServerCache):
     def init_index(self):
         from lib.stock_hdd import hdd
         from lib.tools import find_root
-        index = {"id_obj_prev": hdd().liste_bloc(os.path.join(find_root(), "cache"))}
+        index = {"id_obj_prev": hdd().liste_bloc(os.path.join(find_root(), "cache"))} # TODO mettre la mecanique de l'index ailleurs que dans stock_hdd
         return index
 
 
@@ -568,7 +570,7 @@ class AlphaServerFabrik(AlphaServer):
         self.node = None
         self.lignes = deque()
         self.blocks = deque()
-        self.blk_vers = "0.1.0" # pour le turfu
+        self.blk_vers = "0.1.0" # TODO pour le turfu
 
 
     def msg_welcome(self):
@@ -634,8 +636,8 @@ class AlphaServerFabrik(AlphaServer):
             bloc.bloc['blk_id_prev'] = self.blk_id_prev
             self.currentblock = bloc
             if not self.ordo.execute('trt_blk'):
-                self.ordo.add_task('trt_blk', True, self, minutes=1)
-                # self.ordo.add_task('trt_blk', True, self, seconds=15)
+                # self.ordo.add_task('trt_blk', True, self, minutes=1)
+                self.ordo.add_task('trt_blk', True, self, seconds=15)
 
     async def close_block(self):
         bloc = self.currentblock

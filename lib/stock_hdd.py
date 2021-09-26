@@ -55,7 +55,7 @@ class hdd:
         lst6 = list(zip(lst5, lst3, lst4))
         lst_t = [min(lst6, key=itemgetter(2))]
         while len(lst_t) < len(lst5):
-            lst_t.append(lst6[lst4.index(lst_t[len(lst_t)-1])])
+            lst_t.append(lst6[lst4.index(lst_t[len(lst_t)-1][0])])
         return lst_t
 
     def __close(self,fic):
