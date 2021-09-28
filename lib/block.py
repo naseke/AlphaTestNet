@@ -2,7 +2,7 @@
 
 from etc import contants, structure
 import uuid
-import fastavro
+#import fastavro
 import datetime
 import hashlib
 

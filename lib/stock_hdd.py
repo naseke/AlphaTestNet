@@ -1,4 +1,4 @@
-import fastavro
+# import fastavro
 from etc import contants
 from lib.tools import find_root
 import os
