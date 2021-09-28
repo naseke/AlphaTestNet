@@ -11,7 +11,7 @@
 from lib import parametres
 import lib.Singleton
 
-from binance.client import Client
+from libext.binance.client import Client
 
 class apibinance:
     __VERSION = '0.01'
