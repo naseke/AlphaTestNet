@@ -21,7 +21,7 @@ PORT_VALID = 8200
 
 """Chemin des composants"""
 
-PATH_CMDS='C:\\Users\\naseke\\PycharmProjects\\Alphanet\\cmds'
+PATH_CMDS='C:\\Users\\naseke\\PycharmProjects\\Alphatestnet\\cmds'
 PATH_CMDS2= '/cmds3'  # pour le test
 
 SERVICES = {'loggeur': '1', 'node': '2'}

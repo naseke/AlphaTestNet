@@ -1,6 +1,7 @@
-class done:
 
-    __STRUCT = {'done': []}
+class stop:
+
+    __STRUCT = {'stop': []}
     __VERSION = '0.01'
 
     def read_cmd(self):
@@ -8,7 +9,7 @@ class done:
 
     def write_cmd(self):
         msg = {
-            'command': 'done',
+            'command': 'stop',
             'version_cmd': self.__VERSION,
         }
         return msg
@@ -16,5 +17,7 @@ class done:
     def get_STRUCT(self):
         return self.__STRUCT
 
+    @classmethod
     def get_VERSION(self):
         return self.__VERSION
+

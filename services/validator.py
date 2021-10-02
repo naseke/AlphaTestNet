@@ -9,23 +9,27 @@ class cache:
         return self.__VERSION
 
 
-async def start(host, port):
+async def commande(cmd):
     # from tx.AlphaServer_wo_coro import AlphaServerValidator
-    from lib.AlphaServer import AlphaServerValidator
-
-    loop = asyncio.get_running_loop()
-
-    l = AlphaServerValidator(host, port, debug=False)
-    await l.start()
-
-
-async def main():
     from lib.parametres import Params
     from lib.tools import get_ip
 
     port = int(Params().PARAMS['PORT_VALIDATOR'])
     host = get_ip()
-    await start(host, port)
+    if cmd == 'start':
+        from lib.AlphaServer import AlphaServerValidator
+        l = AlphaServerValidator(host, port, debug=False)
+        await l.start()
+    elif cmd == 'stop':
+        from lib.AlphaClient import AlphaClientValidator
+        AlphaClientValidator.send_cmd(host, port, -1, 'stop', 'AlphaClientValidator', debug=False)
+    else:
+        print("erreur de commande !")
+
+
+async def main():
+
+    await commande('start')
 
 
 if __name__ == "__main__": asyncio.run(main())

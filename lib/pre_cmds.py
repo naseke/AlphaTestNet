@@ -15,11 +15,14 @@ def pre_read_cmd(obj, **msg):
 
     param_dict = ['cmd_test','get_services', 'trsf_config', 'trsf_ligne', 'get_blk_id_prev_fabrik', 'get_blk_id_prev_validator', 'get_blk_id_prev', 'trsf_bloc']
     param_obj_dict = ['get_struct_cmd', 'trf_pre_cmds', 'lower_version', 'get_net_conf', 'get_list_node', ]
+    param_vide = ['stop', ]
 
     if msg['command'] in param_dict:
         return obj.moduleManager.get_obj_throught_module(obj.moduleManager.get_module_by_class(msg['command'])).read_cmd(**msg)
     elif msg['command'] in param_obj_dict:
         return obj.moduleManager.get_obj_throught_module(obj.moduleManager.get_module_by_class(msg['command'])).read_cmd(obj, **msg)
+    elif msg['command'] in param_vide:
+        return obj.moduleManager.get_obj_throught_module(obj.moduleManager.get_module_by_class(msg['command'])).read_cmd()
     else:
         AffichageColor().msg_FAIL(f"Je pratique couramment six millions de formes de communication... pour le moment il me faudrait connaitre la commande '{msg['command']}'")
 
@@ -27,7 +30,7 @@ def pre_read_cmd(obj, **msg):
 def pre_write_cmd(obj, cmd, chaine='', **msg):
     from lib.couleurs import AffichageColor
 
-    param_vide = ['trf_pre_cmds', 'cmd_test', 'get_net_conf', 'get_list_node', ]
+    param_vide = ['trf_pre_cmds', 'cmd_test', 'get_net_conf', 'get_list_node', 'stop', ]
     # param_obj = []
     param_str = ['get_services', 'trsf_config', 'trsf_ligne', 'get_blk_id_prev_fabrik', 'get_blk_id_prev_validator', 'get_blk_id_prev', 'trsf_bloc']
     param_obj_str = ['get_struct_cmd', 'lower_version', ]

@@ -208,7 +208,6 @@ class ManagerClass:
         self.__index = self._set_index()
         self.isempty = self.__modules == []
 
-
     def _set_modules(self):
         from os import listdir
         from os.path import isfile, join

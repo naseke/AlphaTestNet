@@ -56,12 +56,23 @@ class AlphaServer():
          It's gonna be hot and wet! That's nice if you're with a lady, but it ain't no good if you're in the jungle.
          What does three up and three down mean to you Airman? une pub Citroën ? (End of an inning?)""", bold=True)
 
+    def msg_goodbye(self):
+        couleurs.AffichageColor().msg_INFO(msg="""
+          _____  ____   ____  _____  ______     ________   _ _ _ 
+         / ____|/ __ \ / __ \|  __ \|  _ \ \   / /  ____| | | | |
+        | |  __| |  | | |  | | |  | | |_) \ \_/ /| |__    | | | |
+        | | |_ | |  | | |  | | |  | |  _ < \   / |  __|   | | | |
+        | |__| | |__| | |__| | |__| | |_) | | |  | |____  |_|_|_|
+         \_____|\____/ \____/|_____/|____/  |_|  |______| (_|_|_)
+               """)
+
     def start(self):
         self.__is_start = True
         self.msg_welcome()
 
-    def stop(self):
-        self.__is_start=False
+    async def stop(self):
+        self.__is_start = False
+        self.msg_goodbye()
 
     def is_start(self):
         return self.__is_start
@@ -156,7 +167,10 @@ class AlphaServer():
     # findef
 
     async def trt_cmd(self, **msg):
-        if msg['command'] == 'trsf_config':
+        if msg['command'] == 'stop':
+            await self.send_msg_ctrl('done')
+            await self.stop()
+        elif msg['command'] == 'trsf_config':
             v, r = await self.pre_cmds.get_func_throught_module('pre_read_cmd')(self, **msg)
             old_vers = self.last_config_version
             if int(self.last_config_version) < int(v):
@@ -295,8 +309,8 @@ class AlphaServerNode(AlphaServer):
             self.boucle += 1
 
     async def stop(self):
-        super().stop()
         self.ordo.stop()
+        await super().stop()
 
     async def trt_cmd(self, **msg):
         from lib.AlphaClient import AlphaClientNode
@@ -490,6 +504,10 @@ class AlphaServerCache(AlphaServer):
             await asyncio.create_task(self.recv_msg())
             self.boucle += 1
 
+    async def stop(self):
+        self.ordo.stop()
+        await super().stop()
+
     async def trt_cmd(self, **msg):
         from lib.AlphaClient import AlphaClientCache
         from lib.block import Block
@@ -599,6 +617,10 @@ class AlphaServerFabrik(AlphaServer):
             await asyncio.create_task(self.recv_msg())
             self.boucle += 1
 
+    async def stop(self):
+        self.ordo.stop()
+        await super().stop()
+
     async def trt_cmd(self, **msg):
         from time import sleep
         if msg['command'] == 'get_services':
@@ -705,6 +727,9 @@ class AlphaServerValidator(AlphaServer):
             self.init_tx()
             await asyncio.create_task(self.recv_msg())
             self.boucle += 1
+
+    async def stop(self):
+        await super().stop()
 
     async def trt_cmd(self, **msg):
         from lib.block import Block
