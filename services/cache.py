@@ -17,7 +17,7 @@ async def commande(cmd):
     port = int(Params().PARAMS['PORT_CACHE'])
     host = get_ip()
     if cmd == 'start':
-        from lib.AlphaServer import AlphaServerSuperCache
+        from lib.alphaserversupercache import AlphaServerSuperCache
         l = AlphaServerSuperCache(host, port, debug=False)
         await l.start()
     elif cmd == 'stop':

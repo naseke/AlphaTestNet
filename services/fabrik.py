@@ -17,7 +17,7 @@ async def commande(cmd):
     port = int(Params().PARAMS['PORT_FABRIK'])
     host = get_ip()
     if cmd == 'start':
-        from lib.AlphaServer import AlphaServerFabrik
+        from lib.alphaserverfabrik import AlphaServerFabrik
         l = AlphaServerFabrik(host, port, debug=False)
         await l.start()
     elif cmd == 'stop':

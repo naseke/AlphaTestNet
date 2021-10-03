@@ -17,7 +17,7 @@ async def commande(cmd):
     port = int(Params().PARAMS['PORT_VALIDATOR'])
     host = get_ip()
     if cmd == 'start':
-        from lib.AlphaServer import AlphaServerValidator
+        from lib.alphaservervalidator import AlphaServerValidator
         l = AlphaServerValidator(host, port, debug=False)
         await l.start()
     elif cmd == 'stop':

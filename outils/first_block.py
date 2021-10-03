@@ -31,7 +31,7 @@ def main():
         'cache': [],
         'cmds': ['done.py', 'get_entete_msg.py', 'get_net_conf.py', 'get_struct_cmd.py', 'lower_version.py', 'misunderstood.py', 'trf_pre_cmds.py', 'trsf_bloc.py', 'trsf_ligne.py', 'wrong.py'],
         'etc': ['structure.py'],
-        'lib': ['AlphaClient.py', 'AlphaServer.py', 'apibinance.py', 'block.py', 'couleurs.py', 'gas.py', 'line.py', 'ordonnanceur.py', 'parametres.py', 'pre_cmds.py', 'Singleton.py', 'stock_hdd.py', 'tools.py',],
+        'lib': ['AlphaClient.py', 'alphaserver.py', 'alphaservervalidator.py', 'alphaserverfabrik.py', 'alphaserverwallet.py', 'alphaserversupercache.py', 'alphaservercache.py', 'alphaservernode.py', 'block.py', 'couleurs.py', 'gas.py', 'line.py', 'ordonnanceur.py', 'parametres.py', 'pre_cmds.py', 'Singleton.py', 'stock_hdd.py', 'tools.py',],
         'services': ['node.py', 'cache.py', 'fabrik.py'],
     }
 
