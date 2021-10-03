@@ -10,7 +10,7 @@ class ordonnanceur:
         return self.__VERSION
 
 
-class Ordonnanceur:
+class Ordonnanceur: # TODO à mettre dans la log
 
     def __init__(self):
         self.tasks = {}

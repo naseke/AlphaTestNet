@@ -17,32 +17,37 @@ class bcolors:
     PINK = '\033[95m'  # PINK
 
 
-class AffichageColor():
+class AffichageColor(): # TODO A revoir la log :p
 
-    def msg_FAIL(self, msg, bold=False, under=False):
+    def msg_FAIL(self, msg, log=None, bold=False, under=False):
         print(bcolors.FAIL+self.bold(bold)+'-' * 79)
         print(self.under(under)+msg+f'{bcolors.RESET}{bcolors.FAIL}'+self.bold(bold))
         print('-' * 79, f'{bcolors.RESET}')
+        if log: log.error(msg)
 
-    def msg_WARNING(self, msg, bold=False, under=False):
+    def msg_WARNING(self,  msg, log=None, bold=False, under=False):
         print(bcolors.WARNING + self.bold(bold) + '-' * 79)
         print(self.under(under) + msg + f'{bcolors.RESET}{bcolors.WARNING}' + self.bold(bold))
         print('-' * 79, f'{bcolors.RESET}')
+        if log: log.warning(msg)
 
-    def msg_OK(self, msg, bold=False, under=False):
+    def msg_OK(self, msg, log=None, bold=False, under=False):
         print(bcolors.OK + self.bold(bold) + '-' * 79)
         print(self.under(under) + msg + f'{bcolors.RESET}{bcolors.OK}' + self.bold(bold))
         print('-' * 79, f'{bcolors.RESET}')
+        if log: log.info(msg)
 
-    def msg_INFO(self, msg, bold=False, under=False):
+    def msg_INFO(self, msg, log=None, bold=False, under=False):
         print(bcolors.INFO+self.bold(bold)+'-' * 79)
         print(self.under(under)+msg+f'{bcolors.RESET}{bcolors.INFO}'+self.bold(bold))
         print('-' * 79, f'{bcolors.RESET}')
+        if log: log.info(msg)
 
-    def msg_DEBUG(self, msg, bold=False, under=False):
+    def msg_DEBUG(self, msg, log=None, bold=False, under=False):
         print(bcolors.PINK+self.bold(bold)+'-' * 79)
         print(self.under(under)+msg+f'{bcolors.RESET}{bcolors.PINK}'+self.bold(bold))
         print('-' * 79, f'{bcolors.RESET}')
+        if log: log.debug(msg)
 
     def bold(self, b):
         if b:

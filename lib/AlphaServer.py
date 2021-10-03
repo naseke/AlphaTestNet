@@ -9,6 +9,7 @@ from threading import *
 from etc.contants import PATH_CMDS
 from lib import couleurs, tools
 from lib.ordonnanceur import OrdoNode, OrdoCache, OrdoFabrik
+from lib.logs import Log
 
 
 class AlphaServer():
@@ -25,20 +26,22 @@ class AlphaServer():
         self.index = self.init_index()
         self.boucle = 0
         self.last_config_version, self.config = self.load_config()
+        self.log = None
         if self.moduleManager.isempty: couleurs.AffichageColor().msg_WARNING("I have no command vocabulary. I'm a baby !")
         if self._debug: couleurs.AffichageColor().msg_DEBUG(f"get_structCmds {type(self)} {repr(self.moduleManager.get_structCmds())}")
+
 
     @classmethod
     def get_VERSION(self):
         return self.__VERSION
 
     async def send_msg(self, **dico):
-            if self._debug: couleurs.AffichageColor().msg_DEBUG(f'dico {type(self)} {repr(dico)}')
-            if self._debug: couleurs.AffichageColor().msg_DEBUG(f"listener.last_accepted {type(self)} {repr(self.listener.last_accepted)}")
+            if self._debug: couleurs.AffichageColor().msg_DEBUG(f'dico {type(self)} {repr(dico)}', self.log.logger)
+            if self._debug: couleurs.AffichageColor().msg_DEBUG(f"listener.last_accepted {type(self)} {repr(self.listener.last_accepted)}", self.log.logger)
             try:
                 self.conn.send(dico)
             except:
-                couleurs.AffichageColor().msg_FAIL(f'send error "send_msg" on {self.listener.last_accepted}')
+                couleurs.AffichageColor().msg_FAIL(f'send error "send_msg" on {self.listener.last_accepted}', self.log.logger)
                 pass
     # findef
 
@@ -64,7 +67,7 @@ class AlphaServer():
         | | |_ | |  | | |  | | |  | |  _ < \   / |  __|   | | | |
         | |__| | |__| | |__| | |__| | |_) | | |  | |____  |_|_|_|
          \_____|\____/ \____/|_____/|____/  |_|  |______| (_|_|_)
-               """)
+               """, log=self.log.logger)
 
     def start(self):
         self.__is_start = True
@@ -82,16 +85,16 @@ class AlphaServer():
             msg = self.conn.recv()
             return await asyncio.wait([self.trt_msg(msg)])
         except EOFError:
-            couleurs.AffichageColor().msg_FAIL(f"message error in 'recv_msg' with {self.listener.last_accepted}")
+            couleurs.AffichageColor().msg_FAIL(f"message error in 'recv_msg' with {self.listener.last_accepted}", self.log.logger)
             pass
         except ConnectionResetError:
-            couleurs.AffichageColor().msg_FAIL(f"Connection client error in 'recv_msg' from {self.listener.last_accepted}")
+            couleurs.AffichageColor().msg_FAIL(f"Connection client error in 'recv_msg' from {self.listener.last_accepted}", self.log.logger)
             pass
     # findef
 
     def init_tx(self):
         self.conn = self.listener.accept()
-        couleurs.AffichageColor().msg_OK(f'Connected by {self.listener.last_accepted}')
+        couleurs.AffichageColor().msg_OK(f'Connected by {self.listener.last_accepted}', self.log.logger)
     # findef
 
     def close(self):
@@ -100,13 +103,13 @@ class AlphaServer():
     # findef
 
     async def trt_msg(self, msg: dict):
-        if self._debug: couleurs.AffichageColor().msg_DEBUG(f"trt_msg {type(self)} {repr(msg)}")
+        if self._debug: couleurs.AffichageColor().msg_DEBUG(f"trt_msg {type(self)} {repr(msg)}", self.log.logger)
 
         #Le Client ne connait pas la commande donc envoie de la commande
 
         if msg['command'] is 'misunderstood':
-            couleurs.AffichageColor().msg_FAIL('message incompris')
-            couleurs.AffichageColor().msg_FAIL(msg, True)
+            couleurs.AffichageColor().msg_FAIL('message incompris', self.log.logger)
+            couleurs.AffichageColor().msg_FAIL(msg, self.log.logger, True)
             return 1
 
         # Ajout / MAJ d'une commande pour le serveur
@@ -119,9 +122,9 @@ class AlphaServer():
                     with open(path.join('..', self.moduleManager.path, msg['file_name']), 'wb') as fic:
                         fic.write(b64decode(msg['file_content']))
                     self.moduleManager.add_cmd(msg['cmd_name'])
-                    couleurs.AffichageColor().msg_WARNING(f"I just learned the command '{msg['cmd_name']}' it's COOL ! :)")
+                    couleurs.AffichageColor().msg_WARNING(f"I just learned the command '{msg['cmd_name']}' it's COOL ! :)", self.log.logger)
                 else:
-                    couleurs.AffichageColor().msg_FAIL(f"Je pratique couramment six millions de formes de communication... pour le moment il me faudrait connaitre la commande '{msg['command']}'")
+                    couleurs.AffichageColor().msg_FAIL(f"Je pratique couramment six millions de formes de communication... pour le moment il me faudrait connaitre la commande '{msg['command']}'", self.log.logger)
                     await self.send_msg_ctrl_legacy('done')
             else: # utilisation de la dernière version get_struct_cmd si le serveur l'a
                 if msg['version_cmd'] == self.moduleManager.get_obj_throught_module(self.moduleManager.get_module_by_class(msg['command'])).get_VERSION():
@@ -133,10 +136,10 @@ class AlphaServer():
                             self.moduleManager.get_obj_throught_module(self.moduleManager.get_module_by_class(msg['command'])).read_cmd(self, **msg)
                             await self.send_msg_ctrl('done')
                         else:
-                            couleurs.AffichageColor().msg_WARNING(f"wrong version of '{msg['command']}' from {msg['version_cmd']} to {self.moduleManager.get_obj_throught_module(self.moduleManager.get_module_by_class(msg['command'])).get_VERSION()}")
+                            couleurs.AffichageColor().msg_WARNING(f"wrong version of '{msg['command']}' from {msg['version_cmd']} to {self.moduleManager.get_obj_throught_module(self.moduleManager.get_module_by_class(msg['command'])).get_VERSION()}", self.log.logger)
                             await self.send_msg_ctrl('misunderstood')
                     else:
-                        couleurs.AffichageColor().msg_WARNING(f"the client version of command '{msg['command']}' is lower then me from {msg['version_cmd']} to {self.moduleManager.get_obj_throught_module(self.moduleManager.get_module_by_class(msg['command'])).get_VERSION()}.")
+                        couleurs.AffichageColor().msg_WARNING(f"the client version of command '{msg['command']}' is lower then me from {msg['version_cmd']} to {self.moduleManager.get_obj_throught_module(self.moduleManager.get_module_by_class(msg['command'])).get_VERSION()}.", self.log.logger)
                         await self.send_update_msg(msg['command'])
             return 0
 
@@ -152,15 +155,15 @@ class AlphaServer():
                 print('~' * 79)
             else:
                 if msg['version_cmd'] > self.moduleManager.get_obj_throught_module(self.moduleManager.get_module_by_class(msg['command'])).get_VERSION():
-                    couleurs.AffichageColor().msg_WARNING(f"wrong version of '{msg['command']}' from {msg['version_cmd']} to {self.moduleManager.get_obj_throught_module(self.moduleManager.get_module_by_class(msg['command'])).get_VERSION()}")
+                    couleurs.AffichageColor().msg_WARNING(f"wrong version of '{msg['command']}' from {msg['version_cmd']} to {self.moduleManager.get_obj_throught_module(self.moduleManager.get_module_by_class(msg['command'])).get_VERSION()}", self.log.logger)
                     await self.send_msg_ctrl('misunderstood')
                 else:
-                    couleurs.AffichageColor().msg_WARNING(f"the client version of command '{msg['command']}' is lower then me from {msg['version_cmd']} to {self.moduleManager.get_obj_throught_module(self.moduleManager.get_module_by_class(msg['command'])).get_VERSION()}.")
+                    couleurs.AffichageColor().msg_WARNING(f"the client version of command '{msg['command']}' is lower then me from {msg['version_cmd']} to {self.moduleManager.get_obj_throught_module(self.moduleManager.get_module_by_class(msg['command'])).get_VERSION()}.", self.log.logger)
                     await self.send_update_msg(msg['command'])
 
 
         else:
-            couleurs.AffichageColor().msg_WARNING(f"I did not understand the command '{msg['command']}'")
+            couleurs.AffichageColor().msg_WARNING(f"I did not understand the command '{msg['command']}'", self.log.logger)
             await self.send_msg_ctrl('misunderstood')
         # self._debug: couleurs.AffichageColor().msg_DEBUG(repr(self.moduleManager.get_structCmds()))
         return 0
@@ -196,7 +199,7 @@ class AlphaServer():
         try:
             await self.send_msg(**msg)
         except:
-            couleurs.AffichageColor().msg_FAIL(f"send error 'send_msg_ctrl_legacy' on {self.listener.last_accepted}")
+            couleurs.AffichageColor().msg_FAIL(f"send error 'send_msg_ctrl_legacy' on {self.listener.last_accepted}", self.log.logger)
             pass
 
     # findef
@@ -211,7 +214,7 @@ class AlphaServer():
         try:
             await self.send_msg(**msg)
         except:
-            couleurs.AffichageColor().msg_FAIL(f"send error 'send_msg_ctrl' on {self.listener.last_accepted}")
+            couleurs.AffichageColor().msg_FAIL(f"send error 'send_msg_ctrl' on {self.listener.last_accepted}", self.log.logger)
             pass
     # findef
 
@@ -225,7 +228,7 @@ class AlphaServer():
         try:
             await self.send_msg(**msg)
         except:
-            couleurs.AffichageColor().msg_FAIL(f"send error 'send_msg_common' on {self.listener.last_accepted}")
+            couleurs.AffichageColor().msg_FAIL(f"send error 'send_msg_common' on {self.listener.last_accepted}", self.log.logger)
             pass
 
     async def send_msg_common_rep(self, cmd, chaine=None):
@@ -239,7 +242,7 @@ class AlphaServer():
         try:
             await self.send_msg(**msg)
         except:
-            couleurs.AffichageColor().msg_FAIL(f"send error 'send_msg_common' on {self.listener.last_accepted}")
+            couleurs.AffichageColor().msg_FAIL(f"send error 'send_msg_common' on {self.listener.last_accepted}", self.log.logger)
             pass
 
     async def send_update_msg(self, cmd):
@@ -250,11 +253,11 @@ class AlphaServer():
                 'signature': hashlib.sha512("ns".encode()).hexdigest(),
             }
             dico.update(self.moduleManager.get_obj_throught_module(self.moduleManager.get_module_by_class('lower_version')).write_cmd(self, cmd))
-            if self._debug: couleurs.AffichageColor().msg_DEBUG(f"send_update_msg {type(self)} {repr(dico)}")
+            if self._debug: couleurs.AffichageColor().msg_DEBUG(f"send_update_msg {type(self)} {repr(dico)}", self.log.logger)
             try:
                 await self.send_msg(**dico)
             except:
-                couleurs.AffichageColor().msg_FAIL(f"send error 'send_update_msg' on {self.listener.last_accepted}")
+                couleurs.AffichageColor().msg_FAIL(f"send error 'send_update_msg' on {self.listener.last_accepted}", self.log.logger)
                 pass
         else:
             print("commande inconnue")
@@ -282,6 +285,7 @@ class AlphaServerNode(AlphaServer):
         self.blocs_v = deque()
         self.servicesOK = False
         self.blk_id_prev = None
+        self.log = Log('node', os.path.join(tools.find_root(), 'log', 'node.log'))
 
     def msg_welcome(self):
         couleurs.AffichageColor().msg_INFO(msg=f"""
@@ -295,7 +299,7 @@ class AlphaServerNode(AlphaServer):
                                                                             |_|               
         serveur : {self.listener.address[0]} 
         Port: {self.listener.address[1]}      
-        """)
+        """, log=self.log.logger)
 
     async def start(self):
         super().start()
@@ -316,12 +320,12 @@ class AlphaServerNode(AlphaServer):
         from lib.AlphaClient import AlphaClientNode
         if msg['command'] == 'get_net_conf':
             await self.send_msg_common_rep('get_net_conf')
-            couleurs.AffichageColor().msg_INFO(f"{msg['nom']} demande les information réseaux du serveur. Elles ont été transmises.")
+            couleurs.AffichageColor().msg_INFO(f"{msg['nom']} demande les information réseaux du serveur. Elles ont été transmises.", self.log.logger)
         elif msg['command'] == 'get_services':
             if 'liste' in msg.keys() and msg['liste'] != "":
                 r = self.pre_cmds.get_func_throught_module('pre_read_cmd')(**msg)
                 self.services.update(r)
-                couleurs.AffichageColor().msg_INFO(f"{msg['nom']} a comme service {await self.pre_cmds.get_func_throught_module('pre_read_cmd')(**msg)}")
+                couleurs.AffichageColor().msg_INFO(f"{msg['nom']} a comme service {await self.pre_cmds.get_func_throught_module('pre_read_cmd')(**msg)}", self.log.logger)
             else:
                 await self.send_msg_common_rep('get_services')
 
@@ -331,7 +335,7 @@ class AlphaServerNode(AlphaServer):
             else:
                 self.lignes.append(msg['ligne'])
                 couleurs.AffichageColor().msg_WARNING(f"ATTENTION ! node non connecté à un service Fabrik ou ne connaissant pas un node avec le service. \n"
-                                                      f"Stockage de la ligne. Nombre de ligne stockées : {len(self.lignes)}")
+                                                      f"Stockage de la ligne. Nombre de ligne stockées : {len(self.lignes)}", self.log.logger)
         elif msg['command'] == 'get_blk_id_prev_fabrik':
             if self.blk_id_prev is not None:
                 r = AlphaClientNode.send_cmd(self.services['fabrik'][0], self.services['fabrik'][1], self.boucle, 'get_blk_id_prev_fabrik', 'AlphaClientNode', debug=False, chaine=self.blk_id_prev)
@@ -354,14 +358,14 @@ class AlphaServerNode(AlphaServer):
                 else:
                     self.blocs_f.append(blc)
                     couleurs.AffichageColor().msg_WARNING(f"ATTENTION ! node non connecté à un service validator ou ne connaissant pas un node avec le service. \n"
-                                                          f"Stockage du bloc. Nombre de Blocs stockées : {len(self.blocs_f)}")
+                                                          f"Stockage du bloc. Nombre de Blocs stockées : {len(self.blocs_f)}", self.log.logger)
             elif ori == 'validator':
                 if 'cache' in self.services.keys():
                     AlphaClientNode.send_cmd(self.services['cache'][0], self.services['cache'][1], self.boucle, 'trsf_bloc', 'AlphaClientNode', debug=False, chaine=(list(self.services.keys())[0], blc))
                 else:
                     self.blocs_v.append(blc)
                     couleurs.AffichageColor().msg_WARNING(f"ATTENTION ! node non connecté à un service cache ou ne connaissant pas un node avec le service. \n"
-                                                          f"Stockage du bloc. Nombre de Blocs stockées : {len(self.blocs_v)}")
+                                                          f"Stockage du bloc. Nombre de Blocs stockées : {len(self.blocs_v)}", self.log.logger)
             elif ori == 'cache':
                 pass # le turfu !!!
 
@@ -403,16 +407,16 @@ class AlphaServerNode(AlphaServer):
 
     async def test_service(self, service, host, port):
         result = await self._send_get_services(host, port)
-        if self._debug: couleurs.AffichageColor().msg_DEBUG(f"result _send_get_services {result}")
+        if self._debug: couleurs.AffichageColor().msg_DEBUG(f"result _send_get_services {result}", self.log.logger)
         if result < 0:
             couleurs.AffichageColor().msg_WARNING(
                 f"Le service {service} déclaré ({host}:{port}) dans le paramétrage ne répond pas \n"
-                f"Reprogrammation du test...")
+                f"Reprogrammation du test...", self.log.logger)
             if not self.ordo.execute(f'test_service_{service}'):
                 self.ordo.add_task(f'test_service_{service}', True, self, service, host, port, seconds=10)
         else:
-            couleurs.AffichageColor().msg_INFO(f"Le service {service} est ouvert ")
-            if self._debug: couleurs.AffichageColor().msg_DEBUG(f"ordo.tasks {self.ordo.tasks}")
+            couleurs.AffichageColor().msg_INFO(f"Le service {service} est ouvert ", self.log.logger)
+            if self._debug: couleurs.AffichageColor().msg_DEBUG(f"ordo.tasks {self.ordo.tasks}", self.log.logger)
             if self.ordo.execute(f'test_service_{service}'):
                 self.ordo.del_task(f'test_service_{service}')
 
@@ -423,7 +427,7 @@ class AlphaServerNode(AlphaServer):
             if r is not None:
                 if type(r) is str or type(r) is list:
                     self.services.update(r[0])
-                    couleurs.AffichageColor().msg_INFO(f"le serveur {ip} a comme service {repr(r)}")
+                    couleurs.AffichageColor().msg_INFO(f"le serveur {ip} a comme service {repr(r)}", self.log.logger)
                     await self.trt_services()
         except ConnectionRefusedError:
             return -1
@@ -446,7 +450,7 @@ class AlphaServerNode(AlphaServer):
     async def trt_config(self, service):
         from lib.AlphaClient import AlphaClientNode
         if int(self.last_config_version) > 0:
-            if self._debug: couleurs.AffichageColor().msg_DEBUG(f"self.last_config_version {self.last_config_version}")
+            if self._debug: couleurs.AffichageColor().msg_DEBUG(f"self.last_config_version {self.last_config_version}", self.log.logger)
             r = AlphaClientNode.send_cmd(self.services[service.casefold()][0], self.services[service.casefold()][1], self.boucle, 'trsf_config', 'AlphaClientNode', chaine=str((self.config, self.last_config_version)))
             if r:
                 if self.ordo.execute(f'trt_config_{service}'):
@@ -474,6 +478,7 @@ class AlphaServerCache(AlphaServer):
         self.ordo_thread = None
         self.last_config_version, self.config = self.load_config()
         self.blk_id_prev = self.index['id_obj_prev'][len(self.index['id_obj_prev'])-1][0]
+        self.log = Log('cache', os.path.join(tools.find_root(), 'log', 'cache.log'))
 
     def msg_welcome(self):
         couleurs.AffichageColor().msg_INFO(msg=f"""
@@ -488,7 +493,7 @@ class AlphaServerCache(AlphaServer):
                                                                                      |_|               
            serveur : {self.listener.address[0]} 
            Port: {self.listener.address[1]}      
-           """)
+           """, log=self.log.logger)
 
     async def start(self):
         super().start()
@@ -496,8 +501,8 @@ class AlphaServerCache(AlphaServer):
         self.ordo_thread.start()
         couleurs.AffichageColor().msg_INFO(f"Chargement de la configuration \n"
                                            f"version : {self.last_config_version}\n"
-                                           f"{repr(self.config)}")
-        couleurs.AffichageColor().msg_INFO(f"{len(self.index['id_obj_prev'])} blocs trouvés dans le cache")
+                                           f"{repr(self.config)}", self.log.logger)
+        couleurs.AffichageColor().msg_INFO(f"{len(self.index['id_obj_prev'])} blocs trouvés dans le cache", self.log.logger)
         while self.is_start():
             print(f"boucle n°{self.boucle}")
             self.init_tx()
@@ -567,7 +572,7 @@ class AlphaServerSuperCache(AlphaServerCache):
                                                                                                                                         |_|               
               serveur : {self.listener.address[0]} 
               Port: {self.listener.address[1]}      
-              """)
+              """, log=self.log.logger)
 
     def init_index(self):
         from lib.stock_hdd import hdd
@@ -589,6 +594,7 @@ class AlphaServerFabrik(AlphaServer):
         self.lignes = deque()
         self.blocks = deque()
         self.blk_vers = "0.1.0" # TODO pour le turfu
+        self.log = Log('fabrik', os.path.join(tools.find_root(), 'log', 'fabrik.log'))
 
 
     def msg_welcome(self):
@@ -604,7 +610,7 @@ class AlphaServerFabrik(AlphaServer):
                                                                                      |_|               
               serveur : {self.listener.address[0]} 
               Port: {self.listener.address[1]}      
-              """)
+              """, log=self.log.logger)
 
     async def start(self):
         super().start()
@@ -651,7 +657,7 @@ class AlphaServerFabrik(AlphaServer):
             if self.node:
                 AlphaClientFabrik.send_cmd(self.node[0], self.node[1], self.boucle, 'get_blk_id_prev_fabrik', 'AlphaClientFabrik', debug=False)
             else:
-                couleurs.AffichageColor().msg_WARNING("Attention pas de node encore connecté ! donc pas d'init block")
+                couleurs.AffichageColor().msg_WARNING( "Attention pas de node encore connecté ! donc pas d'init block", self.log.logger)
         else:
             bloc = Block()
             bloc.bloc['blk_config'] = self.config
@@ -693,6 +699,7 @@ class AlphaServerFabrik(AlphaServer):
     def load_config(self):
         return '0', {'PORT_FABRIK': '8020'}
 
+
 class AlphaServerValidator(AlphaServer):
 
     def __init__(self, host, port, pwd=None, debug=False):
@@ -701,6 +708,8 @@ class AlphaServerValidator(AlphaServer):
         self.currentblock = None
         self.node = None
         self.blocks = deque()
+        self.log = Log('validator', os.path.join(tools.find_root(), 'log', 'validator.log'))
+
 
 
     def msg_welcome(self):
@@ -716,7 +725,7 @@ class AlphaServerValidator(AlphaServer):
                                                                                                              |_|               
                  serveur : {self.listener.address[0]} 
                  Port: {self.listener.address[1]}      
-                 """)
+                 """, log=self.log.logger)
 
     async def start(self):
         super().start()
